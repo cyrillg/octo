@@ -9,7 +9,7 @@ set_property(CACHE CACHE_OPTION PROPERTY STRINGS ${CACHE_OPTION_VALUES})
 list(FIND CACHE_OPTION_VALUES ${CACHE_OPTION} CACHE_OPTION_INDEX)
 
 if(${CACHE_OPTION_INDEX} EQUAL -1)
-    message(STATUS "Using custom compiler cache system: '${CACHE_OPTION}', explicitly supported entries are ${CACHE_OPTION_VALUES}")
+    message(SEND_ERROR "Unknown compiler cache system specified: '${CACHE_OPTION}', supported entries are ${CACHE_OPTION_VALUES}")
 endif()
 
 find_program(CACHE_BINARY ${CACHE_OPTION})

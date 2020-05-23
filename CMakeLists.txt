@@ -3,6 +3,12 @@
 cmake_minimum_required (VERSION 3.10)
 
 project(astar_planner_viewer VERSION 1.0)
+
+
+# ----------------------------------------------------------------------------
+# CONFIGURE
+# ----------------------------------------------------------------------------
+
 include(cmake/standard_project_settings.cmake)
 
 if (MSVC)
@@ -34,29 +40,28 @@ enable_doxygen()
 # allow for static analysis options
 include(cmake/static_analyzers.cmake)
 
-# Very basic PCH example
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
 if (ENABLE_PCH)
-  # This sets a global PCH parameter, each project will build its own PCH, which
-  # is a good idea if any #define's change
-  # 
-  # consider breaking this out per project as necessary 
+  # Global PCH parameter
   target_precompile_headers(${PROJECT_NAME}_options INTERFACE <vector> <iostream> <string> <unorderd_map> <utility>)
 endif()
 
-
-set(gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU>")
-set(msvc_cxx "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
-target_compile_options(${PROJECT_NAME}_options INTERFACE
-  "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused>>"
-  "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
-)
+# set(gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU>")
+# set(msvc_cxx "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
+# target_compile_options(${PROJECT_NAME}_options INTERFACE
+#   "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused>>"
+#   "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
+# )
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 
 #option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
+# ----------------------------------------------------------------------------
+# BUILD
+# ----------------------------------------------------------------------------
 
 configure_file(src/${PROJECT_NAME}_config.hpp.in ${PROJECT_NAME}_config.hpp)
 
@@ -71,6 +76,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                            )
 #target_compile_definitions(${PROJECT_NAME}
 #                           PRIVATE USELESS_VAR)
+
+
+# ----------------------------------------------------------------------------
+# INSTALL
+# ----------------------------------------------------------------------------
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_config.hpp
@@ -108,6 +118,10 @@ install(FILES
 export(EXPORT math_functionsTargets
   FILE ${CMAKE_CURRENT_BINARY_DIR}/math_functionsTargets.cmake
 )
+
+# ----------------------------------------------------------------------------
+# INSTALLERS
+# ----------------------------------------------------------------------------
 
 include(InstallRequiredSystemLibraries)
 #set(CPACK_GENERATOR "DEB")
