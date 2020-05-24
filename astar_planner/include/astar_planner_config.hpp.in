@@ -1,2 +1,2 @@
-#define astar_planner_VERSION_MAJOR @astar_planner_VERSION_MAJOR @
-#define astar_planner_VERSION_MINOR @astar_planner_VERSION_MINOR @
+#define astar_planner_VERSION_MAJOR @astar_planner_VERSION_MAJOR@
+#define astar_planner_VERSION_MINOR @astar_planner_VERSION_MINOR@

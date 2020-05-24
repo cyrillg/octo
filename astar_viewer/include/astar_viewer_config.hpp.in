@@ -1,0 +1,2 @@
+#define astar_viewer_VERSION_MAJOR @astar_viewer_VERSION_MAJOR@
+#define astar_viewer_VERSION_MINOR @astar_viewer_VERSION_MINOR@

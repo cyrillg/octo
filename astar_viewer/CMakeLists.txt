@@ -2,7 +2,7 @@
 
 cmake_minimum_required (VERSION 3.15)
 
-project(astar_planner
+project(astar_viewer
   VERSION 1.0
   DESCRIPTION ""
   LANGUAGES CXX)
@@ -54,50 +54,24 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 configure_file(include/${PROJECT_NAME}_config.hpp.in ${PROJECT_NAME}_config.hpp)
 
-add_library(planner src/planner.cc)
-target_include_directories(planner
-                           PUBLIC
-                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                           "$<INSTALL_INTERFACE:include>")
-target_compile_definitions(planner
-                           PRIVATE "ASTAR_BUILD")
-target_link_libraries(planner PUBLIC ${PROJECT_NAME}_options)
+list(APPEND EXTRA_LIBS planner)
 
+message("YOOOO: ${PROJECT_BINARY_DIR}")
+# Add source to this project's executable.
+add_executable (viewer src/main.cc)
+target_link_libraries(viewer PUBLIC ${EXTRA_LIBS})
+target_include_directories(viewer
+                           PUBLIC ${PROJECT_BINARY_DIR})
 
 # ----------------------------------------------------------------------------
 # INSTALL
 # ----------------------------------------------------------------------------
 
-install(TARGETS planner ${PROJECT_NAME}_options
-        DESTINATION lib
-        EXPORT plannerTargets)
+install(TARGETS viewer
+        DESTINATION bin)
 
-install(FILES include/planner.hpp ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_config.hpp
+install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_config.hpp
         DESTINATION include)
-
-include(CMakePackageConfigHelpers)
-# generate the config file that includes the exports
-configure_package_config_file(Config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-                              INSTALL_DESTINATION "lib/cmake/${PROJECT_NAME}"
-                              NO_SET_AND_CHECK_MACRO
-                              NO_CHECK_REQUIRED_COMPONENTS_MACRO)
-
-# generate the version file for the config file
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-                                 VERSION "${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}"
-                                 COMPATIBILITY AnyNewerVersion)
-
-# install the configuration file
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-        DESTINATION lib/cmake/${PROJECT_NAME})
-
-install(EXPORT plannerTargets
-        FILE plannerTargets.cmake
-        DESTINATION lib/cmake/${PROJECT_NAME})
-
-# allow use of the package within a project
-export(EXPORT plannerTargets
-       FILE ${CMAKE_CURRENT_BINARY_DIR}/plannerTargets.cmake)
 
 # ----------------------------------------------------------------------------
 # INSTALLERS
