@@ -56,7 +56,6 @@ configure_file(include/${PROJECT_NAME}_config.hpp.in ${PROJECT_NAME}_config.hpp)
 
 list(APPEND EXTRA_LIBS planner)
 
-message("YOOOO: ${PROJECT_BINARY_DIR}")
 # Add source to this project's executable.
 add_executable (viewer src/main.cc)
 target_link_libraries(viewer PUBLIC ${EXTRA_LIBS})

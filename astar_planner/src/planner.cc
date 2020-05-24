@@ -21,8 +21,8 @@ double plan(double x)
     }
     double delta = x - (result * result);
     result = result + 0.5 * delta / result;
-    // std::cout << "Computing sqrt of " << x << " to be " << result << std::endl;
   }
+
   return result;
 }
 }  // namespace octo

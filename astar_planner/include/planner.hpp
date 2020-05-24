@@ -1,11 +1,11 @@
 #if defined(_WIN32)  // windows
-#if defined(ASTAR_BUILD)
-#define ASTAR_API __declspec(dllexport)
+#if defined(PLANNER_BUILD)
+#define PLANNER_API __declspec(dllexport)
 #else
-#define ASTAR_API __declspec(dllimport)
+#define PLANNER_API __declspec(dllimport)
 #endif
 #else  // non windows
-#define DECLSPEC
+#define PLANNER_API
 #endif
 
 #include <iostream>
