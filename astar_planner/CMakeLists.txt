@@ -52,9 +52,9 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 # BUILD
 # ----------------------------------------------------------------------------
 
-configure_file(include/${PROJECT_NAME}_config.hpp.in ${PROJECT_NAME}_config.hpp)
+configure_file(include/${PROJECT_NAME}/${PROJECT_NAME}_config.hpp.in ${PROJECT_NAME}/${PROJECT_NAME}_config.hpp)
 
-add_library(planner src/planner.cc)
+add_library(planner src/${PROJECT_NAME}/planner.cc)
 target_include_directories(planner
                            PUBLIC
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
@@ -72,7 +72,7 @@ install(TARGETS planner ${PROJECT_NAME}_options
         DESTINATION lib
         EXPORT plannerTargets)
 
-install(FILES include/planner.hpp ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_config.hpp
+install(FILES include/${PROJECT_NAME}/planner.hpp ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}_config.hpp
         DESTINATION include)
 
 include(CMakePackageConfigHelpers)
