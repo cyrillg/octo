@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <limits>
 #include <memory>
-#include <math.h>
+#include <cmath>
 
 namespace octo
 {
@@ -43,7 +43,16 @@ public:
   bool operator()(const Cell* a, const Cell* b);
 };
 
-using Map = std::vector<std::shared_ptr<Cell>>;
+class Map
+{
+public:
+  int width_;
+  int height_;
+  double resolution_;
+  std::vector<std::shared_ptr<Cell>> data_;
+};
+
+void find_neighbours(const Map& map, int i, int j, std::vector<std::pair<int, int>>& neighbours);
 
 Map generate_map(int width, int height, double resolution, Pose origin);
 

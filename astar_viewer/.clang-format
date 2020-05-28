@@ -45,5 +45,21 @@ SpaceAfterControlStatementKeyword: true
 SpaceBeforeAssignmentOperators: true
 ContinuationIndentWidth: 4
 SpaceAfterCStyleCast: false
+
+# Configure each individual brace in BraceWrapping
 BreakBeforeBraces: Allman
+
+# Control of individual brace wrapping cases
+#BraceWrapping: {
+#    AfterClass: 'true'
+#    AfterControlStatement: 'true'
+#    AfterEnum : 'true'
+#    AfterFunction : 'true'
+#    AfterNamespace : 'true'
+#    AfterStruct : 'true'
+#    AfterUnion : 'true'
+#    BeforeCatch : 'true'
+#    BeforeElse : 'true'
+#    IndentBraces : 'false'
+#}
 ...

@@ -13,10 +13,96 @@ bool Cell::operator()(const Cell* lhs, const Cell* rhs)
   return lhs->f_score_ < rhs->f_score_;
 }
 
+void find_neighbours(const Map& map, int i, int j, std::vector<std::pair<int, int>>& neighbours)
+{
+  std::pair<int, int> top_left = std::make_pair(1, -1);
+  std::pair<int, int> top = std::make_pair(1, 0);
+  std::pair<int, int> top_right = std::make_pair(1, 1);
+  std::pair<int, int> right = std::make_pair(0, 1);
+  std::pair<int, int> bottom_right = std::make_pair(-1, 1);
+  std::pair<int, int> bottom = std::make_pair(-1, 0);
+  std::pair<int, int> bottom_left = std::make_pair(-1, -1);
+  std::pair<int, int> left = std::make_pair(0, -1);
+
+  // Corners
+  if (i == 0 && j == 0)
+  {
+    neighbours.emplace_back(top);
+    neighbours.emplace_back(top_right);
+    neighbours.emplace_back(right);
+  }
+  else if (i == map.height_ - 1 && j == 0)
+  {
+    neighbours.emplace_back(right);
+    neighbours.emplace_back(bottom_right);
+    neighbours.emplace_back(bottom);
+  }
+  else if (i == map.height_ - 1 && j == map.width_ - 1)
+  {
+    neighbours.emplace_back(bottom);
+    neighbours.emplace_back(bottom_left);
+    neighbours.emplace_back(left);
+  }
+  else if (i == 0 && j == map.width_ - 1)
+  {
+    neighbours.emplace_back(left);
+    neighbours.emplace_back(top_left);
+    neighbours.emplace_back(top);
+  }
+  else
+  {
+    // Sides
+    if (i == 0)
+    {
+      neighbours.emplace_back(left);
+      neighbours.emplace_back(top_left);
+      neighbours.emplace_back(top);
+      neighbours.emplace_back(top_right);
+      neighbours.emplace_back(right);
+    }
+    else if (j == 0)
+    {
+      neighbours.emplace_back(top);
+      neighbours.emplace_back(top_right);
+      neighbours.emplace_back(right);
+      neighbours.emplace_back(bottom_right);
+      neighbours.emplace_back(bottom);
+    }
+    else if (j == map.width_ - 1)
+    {
+      neighbours.emplace_back(bottom);
+      neighbours.emplace_back(bottom_left);
+      neighbours.emplace_back(left);
+      neighbours.emplace_back(top_left);
+      neighbours.emplace_back(top);
+    }
+    else if (i == map.height_ - 1)
+    {
+      neighbours.emplace_back(right);
+      neighbours.emplace_back(bottom_right);
+      neighbours.emplace_back(bottom);
+      neighbours.emplace_back(bottom_left);
+      neighbours.emplace_back(left);
+    }
+    // Inside
+    else
+    {
+      neighbours.emplace_back(top_left);
+      neighbours.emplace_back(top);
+      neighbours.emplace_back(top_right);
+      neighbours.emplace_back(right);
+      neighbours.emplace_back(bottom_right);
+      neighbours.emplace_back(bottom);
+      neighbours.emplace_back(bottom_left);
+      neighbours.emplace_back(left);
+    }
+  }
+}
+
 Map generate_map(int width, int height, double resolution, Pose origin)
 {
   Map map;
-  map.reserve(static_cast<long long>(width) * height);
+  map.data_.reserve(static_cast<long long>(width) * height);
 
   if (width < 2 || height < 2)
   {
@@ -34,105 +120,24 @@ Map generate_map(int width, int height, double resolution, Pose origin)
       x = origin.x_ + j * resolution;
       y = origin.y_ + i * resolution;
       std::shared_ptr<Cell> cell = std::make_shared<Cell>(x, y, false, j + i * height);
-      map.emplace_back(cell);
+      map.data_.emplace_back(cell);
     }
   }
-
-  std::pair<int, int> top_left = std::make_pair(1, -1);
-  std::pair<int, int> top = std::make_pair(1, 0);
-  std::pair<int, int> top_right = std::make_pair(1, 1);
-  std::pair<int, int> right = std::make_pair(0, 1);
-  std::pair<int, int> bottom_right = std::make_pair(-1, 1);
-  std::pair<int, int> bottom = std::make_pair(-1, 0);
-  std::pair<int, int> bottom_left = std::make_pair(-1, -1);
-  std::pair<int, int> left = std::make_pair(0, -1);
-
-  for (int i = 0; i < height; i++)
+  for (int i = 0; i < map.height_; i++)
   {
-    for (int j = 0; j < width; j++)
+    for (int j = 0; j < map.width_; j++)
     {
-      std::vector<std::pair<int, int>> neighbours;
-      std::shared_ptr<Cell> current_cell = map.at(static_cast<long long>(j) + static_cast<long long>(i) * height);
+      std::shared_ptr<Cell> current_cell =
+          map.data_.at(static_cast<long long>(j) + static_cast<long long>(i) * map.height_);
 
-      // Corners
-      if (i == 0 && j == 0)
-      {
-        neighbours.emplace_back(top);
-        neighbours.emplace_back(top_right);
-        neighbours.emplace_back(right);
-      }
-      else if (i == height - 1 && j == 0)
-      {
-        neighbours.emplace_back(right);
-        neighbours.emplace_back(bottom_right);
-        neighbours.emplace_back(bottom);
-      }
-      else if (i == height - 1 && j == width - 1)
-      {
-        neighbours.emplace_back(bottom);
-        neighbours.emplace_back(bottom_left);
-        neighbours.emplace_back(left);
-      }
-      else if (i == 0 && j == width - 1)
-      {
-        neighbours.emplace_back(left);
-        neighbours.emplace_back(top_left);
-        neighbours.emplace_back(top);
-      }
-      else
-      {
-        // Sides
-        if (i == 0)
-        {
-          neighbours.emplace_back(left);
-          neighbours.emplace_back(top_left);
-          neighbours.emplace_back(top);
-          neighbours.emplace_back(top_right);
-          neighbours.emplace_back(right);
-        }
-        else if (j == 0)
-        {
-          neighbours.emplace_back(top);
-          neighbours.emplace_back(top_right);
-          neighbours.emplace_back(right);
-          neighbours.emplace_back(bottom_right);
-          neighbours.emplace_back(bottom);
-        }
-        else if (j == width - 1)
-        {
-          neighbours.emplace_back(bottom);
-          neighbours.emplace_back(bottom_left);
-          neighbours.emplace_back(left);
-          neighbours.emplace_back(top_left);
-          neighbours.emplace_back(top);
-        }
-        else if (i == height - 1)
-        {
-          neighbours.emplace_back(right);
-          neighbours.emplace_back(bottom_right);
-          neighbours.emplace_back(bottom);
-          neighbours.emplace_back(bottom_left);
-          neighbours.emplace_back(left);
-        }
-        // Inside
-        else
-        {
-          neighbours.emplace_back(top_left);
-          neighbours.emplace_back(top);
-          neighbours.emplace_back(top_right);
-          neighbours.emplace_back(right);
-          neighbours.emplace_back(bottom_right);
-          neighbours.emplace_back(bottom);
-          neighbours.emplace_back(bottom_left);
-          neighbours.emplace_back(left);
-        }
-      }
+      std::vector<std::pair<int, int>> neighbours;
+      find_neighbours(map, i, j, neighbours);
 
       for (auto neighbour : neighbours)
       {
         long long neighbour_index =
             j + static_cast<long long>(neighbour.second) + (static_cast<long long>(neighbour.first) + i) * height;
-        current_cell->neighbours_.push_back(map.at(neighbour_index));
+        current_cell->neighbours_.push_back(map.data_.at(neighbour_index));
       }
     }
   }
@@ -158,9 +163,9 @@ int plan()
 
   std::priority_queue<std::shared_ptr<Cell>, std::vector<std::shared_ptr<Cell>>, std::less<std::shared_ptr<Cell>>>
       open_set;
-  open_set.push(map.at(index_start));
+  open_set.push(map.data_.at(index_start));
 
-  Cell goal = *map.back();
+  Cell goal = *map.data_.back();
 
   //  // For node n, cameFrom[n] is the node immediately preceding it on the cheapest path from start
   //  // to n currently known.
@@ -170,13 +175,13 @@ int plan()
   //  // For node n, gScore[n] is the cost of the cheapest path from start to n currently known.
   //  gScore := map with default value of Infinity
   //  gScore[start] := 0
-  map.at(index_start)->g_score_ = 0.;
+  map.data_.at(index_start)->g_score_ = 0.;
 
   //  // For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
   //  // how short a path from start to finish can be if it goes through n.
   //  fScore := map with default value of Infinity
   //  fScore[start] := h(start)
-  map.at(index_start)->f_score_ = distance(*map.at(index_start), goal);
+  map.data_.at(index_start)->f_score_ = distance(*map.data_.at(index_start), goal);
 
   //  while openSet is not empty
   while (open_set.size())
@@ -191,16 +196,15 @@ int plan()
     {
       std::cout << "Found!" << std::endl;
     }
+    //      openSet.Remove(current)
     open_set.pop();
+    //      for each neighbor of current
     for (const auto cell : current.neighbours_)
     {
       std::cout << cell->pose_.x_ << " " << cell->pose_.y_ << " " << cell->index_ << std::endl;
     }
     break;
   }
-
-  //      openSet.Remove(current)
-  //      for each neighbor of current
   //          // d(current,neighbor) is the weight of the edge from current to neighbor
   //          // tentative_gScore is the distance from start to the neighbor through current
   //          tentative_gScore := gScore[current] + d(current, neighbor)
