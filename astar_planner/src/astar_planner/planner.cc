@@ -102,6 +102,8 @@ void find_neighbours(const Map& map, int i, int j, std::vector<std::pair<int, in
 Map generate_map(int width, int height, double resolution, Pose origin)
 {
   Map map;
+  map.width_ = width;
+  map.height_ = height;
   map.data_.reserve(static_cast<long long>(width) * height);
 
   if (width < 2 || height < 2)
@@ -123,9 +125,9 @@ Map generate_map(int width, int height, double resolution, Pose origin)
       map.data_.emplace_back(cell);
     }
   }
-  for (int i = 0; i < map.height_; i++)
+  for (int i = 0; i < height; i++)
   {
-    for (int j = 0; j < map.width_; j++)
+    for (int j = 0; j < width; j++)
     {
       std::shared_ptr<Cell> current_cell =
           map.data_.at(static_cast<long long>(j) + static_cast<long long>(i) * map.height_);
@@ -199,22 +201,30 @@ int plan()
     //      openSet.Remove(current)
     open_set.pop();
     //      for each neighbor of current
-    for (const auto cell : current.neighbours_)
+    for (const auto neighbour : current.neighbours_)
     {
-      std::cout << cell->pose_.x_ << " " << cell->pose_.y_ << " " << cell->index_ << std::endl;
+      //          // d(current,neighbor) is the weight of the edge from current to neighbor
+      //          // tentative_gScore is the distance from start to the neighbor through current
+      //          tentative_gScore := gScore[current] + d(current, neighbor)
+      double d = distance(current, *neighbour);
+      double new_score = current.g_score_ + d;
+      //          if tentative_gScore < gScore[neighbor]
+      //              // This path to neighbor is better than any previous one. Record it!
+      //              cameFrom[neighbor] := current
+      //              gScore[neighbor] := tentative_gScore
+      //              fScore[neighbor] := gScore[neighbor] + h(neighbor)
+      //              if neighbor not in openSet
+      //                  openSet.add(neighbor)
+      if (new_score < neighbour->g_score_)
+      {
+        came_from[neighbour->index_] = current;
+        neighbour->g_score_ = new_score;
+        neighbour->f_score_ = new_score + distance(*neighbour, goal);
+        // if TODO
+      }
     }
     break;
   }
-  //          // d(current,neighbor) is the weight of the edge from current to neighbor
-  //          // tentative_gScore is the distance from start to the neighbor through current
-  //          tentative_gScore := gScore[current] + d(current, neighbor)
-  //          if tentative_gScore < gScore[neighbor]
-  //              // This path to neighbor is better than any previous one. Record it!
-  //              cameFrom[neighbor] := current
-  //              gScore[neighbor] := tentative_gScore
-  //              fScore[neighbor] := gScore[neighbor] + h(neighbor)
-  //              if neighbor not in openSet
-  //                  openSet.add(neighbor)
 
   //  // Open set is empty but goal was never reached
   //  return failure
