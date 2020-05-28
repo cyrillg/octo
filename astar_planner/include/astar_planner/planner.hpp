@@ -10,12 +10,16 @@
 
 #include <iostream>
 #include <array>
+#include <string>
 #include <vector>
 #include <queue>
 #include <unordered_map>
 #include <limits>
 #include <memory>
 #include <cmath>
+#include <sstream>
+
+#include "astar_planner/priority_queue.hpp"
 
 namespace octo
 {
@@ -39,6 +43,7 @@ public:
   double f_score_ = std::numeric_limits<double>::max();
   std::vector<std::shared_ptr<Cell>> neighbours_;
 
+  Cell();
   Cell(double x, double y, bool occupied, int index);
   bool operator()(const Cell* a, const Cell* b);
 };

@@ -3,6 +3,10 @@
 // a hack square root calculation using simple operations
 namespace octo
 {
+Cell::Cell()
+{
+}
+
 Cell::Cell(double x, double y, bool occupied, int index) : pose_{ x, y }, occupied_(occupied), index_(index)
 {
 }
@@ -11,6 +15,17 @@ Cell::Cell(double x, double y, bool occupied, int index) : pose_{ x, y }, occupi
 bool Cell::operator()(const Cell* lhs, const Cell* rhs)
 {
   return lhs->f_score_ < rhs->f_score_;
+}
+
+void reconstruct_path(const Cell& goal, const std::shared_ptr<Cell> start, std::unordered_map<int, Cell> came_from)
+{
+  Cell current = goal;
+  std::cout << "Waypoint: " << goal.pose_.x_ << " " << goal.pose_.y_ << std::endl;
+  while (current.index_ != start->index_)
+  {
+    current = came_from.at(current.index_);
+    std::cout << "Waypoint: " << current.pose_.x_ << " " << current.pose_.y_ << std::endl;
+  }
 }
 
 void find_neighbours(const Map& map, int i, int j, std::vector<std::pair<int, int>>& neighbours)
@@ -99,6 +114,21 @@ void find_neighbours(const Map& map, int i, int j, std::vector<std::pair<int, in
   }
 }
 
+void print_map(const Map& map)
+{
+  for (int i = map.height_ - 1; i > -1; i--)
+  {
+    std::stringstream ss1;
+    std::stringstream ss2;
+    for (int j = 0; j < map.width_; j++)
+    {
+      ss1 << " " << map.data_.at(static_cast<long long>(j) + static_cast<long long>(i) * map.height_)->g_score_;
+      ss2 << " " << map.data_.at(static_cast<long long>(j) + static_cast<long long>(i) * map.height_)->index_;
+    }
+    std::cout << ss1.str() << " | " << ss2.str() << std::endl;
+  }
+};
+
 Map generate_map(int width, int height, double resolution, Pose origin)
 {
   Map map;
@@ -152,6 +182,11 @@ double distance(const Cell& a, const Cell& b)
   return std::sqrt(std::pow(a.pose_.x_ - b.pose_.x_, 2) + std::pow(a.pose_.y_ - b.pose_.y_, 2));
 }
 
+double distance(const std::shared_ptr<Cell> a, const Cell& b)
+{
+  return std::sqrt(std::pow(a->pose_.x_ - b.pose_.x_, 2) + std::pow(a->pose_.y_ - b.pose_.y_, 2));
+}
+
 // int plan(Pose start_pose, Pose goal_pose);
 int plan()
 {
@@ -163,9 +198,10 @@ int plan()
   // openSet:= {start}
   Map map = generate_map(3, 3, 1, { 0, 0 });
 
-  std::priority_queue<std::shared_ptr<Cell>, std::vector<std::shared_ptr<Cell>>, std::less<std::shared_ptr<Cell>>>
-      open_set;
-  open_set.push(map.data_.at(index_start));
+  std::shared_ptr<Cell> start = map.data_.at(index_start);
+
+  PriorityQueue<std::shared_ptr<Cell>, std::vector<std::shared_ptr<Cell>>, std::less<std::shared_ptr<Cell>>> open_set;
+  open_set.push(start);
 
   Cell goal = *map.data_.back();
 
@@ -177,26 +213,30 @@ int plan()
   //  // For node n, gScore[n] is the cost of the cheapest path from start to n currently known.
   //  gScore := map with default value of Infinity
   //  gScore[start] := 0
-  map.data_.at(index_start)->g_score_ = 0.;
+  start->g_score_ = 0.;
 
   //  // For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
   //  // how short a path from start to finish can be if it goes through n.
   //  fScore := map with default value of Infinity
   //  fScore[start] := h(start)
-  map.data_.at(index_start)->f_score_ = distance(*map.data_.at(index_start), goal);
+  start->f_score_ = distance(start, goal);
 
   //  while openSet is not empty
+  std::cout << "Set size: " << open_set.size() << std::endl;
   while (open_set.size())
   {
     // This operation can occur in O(1) time if openSet is a min-heap or a priority queue
     // current := the node in openSet having the lowest fScore[] value
     //      if current = goal
     //          return reconstruct_path(cameFrom, current)
-
     Cell current = *open_set.top();
-    if (true)
+    std::cout << "Running (" << current.index_ << ", " << goal.index_ << ")" << std::endl;
+    if (current.index_ == goal.index_)
     {
       std::cout << "Found!" << std::endl;
+      print_map(map);
+      reconstruct_path(goal, start, came_from);
+      return 0;
     }
     //      openSet.Remove(current)
     open_set.pop();
@@ -220,14 +260,24 @@ int plan()
         came_from[neighbour->index_] = current;
         neighbour->g_score_ = new_score;
         neighbour->f_score_ = new_score + distance(*neighbour, goal);
-        // if TODO
+        auto it = open_set.find(neighbour);
+        if (it == open_set.end())
+        {
+          std::cout << "Pushing into queue" << std::endl;
+
+          open_set.push(neighbour);
+        }
+        else
+        {
+          std::cout << "Already there" << std::endl;
+        }
       }
     }
-    break;
   }
 
   //  // Open set is empty but goal was never reached
   //  return failure
-  return 0;
+  std::cout << "Failed" << std::endl;
+  return 1;
 }
 }  // namespace octo
