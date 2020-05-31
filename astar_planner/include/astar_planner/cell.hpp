@@ -21,7 +21,7 @@ public:
   std::vector<int> neighbours_;
 
   Cell();
-  Cell(double x, double y, bool occupied, int index);
+  Cell(double x, double y, bool occupied, int index, std::vector<int> neighbours_);
   bool operator()(const Cell* a, const Cell* b);
 };
 

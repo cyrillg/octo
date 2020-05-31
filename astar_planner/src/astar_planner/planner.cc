@@ -25,7 +25,7 @@ void generate_map(int width, int height, double resolution, Pose origin, Map& ma
   map.height_ = height;
   {
     PROFILE_SCOPE("map_reserve");
-    map.data_.reserve(static_cast<long long>(width) * height);
+    map.data_.reserve(width * height);
   }
 
   if (width < 2 || height < 2)
@@ -34,10 +34,20 @@ void generate_map(int width, int height, double resolution, Pose origin, Map& ma
     exit(1);
   }
 
+  if (width > 30000 || height > 30000)
+  {
+    std::cout << "Map width and length can be at most 30000 pixels" << std::endl;
+    exit(1);
+  }
+
   {
     PROFILE_SCOPE("cell_create");
     double x;
     double y;
+    std::vector<std::pair<int, int>> neighbour_motions;
+    std::vector<int> neighbours;
+    int current_index;
+    int neighbour_index;
     for (int i = 0; i < height; i++)
     {
       y = origin.y;
@@ -45,29 +55,16 @@ void generate_map(int width, int height, double resolution, Pose origin, Map& ma
       {
         x = origin.x + j * resolution;
         y = origin.y + i * resolution;
-        Cell cell = Cell(x, y, false, j + i * height);  // TODO measure time and allocations using that
-                                                        // temporary variable vs directly feeding emplace_back
-        map.data_.emplace_back(cell);
-      }
-    }
-  }
-  {
-    PROFILE_SCOPE("find neighbours");
-    for (int i = 0; i < height; i++)
-    {
-      for (int j = 0; j < width; j++)
-      {
-        long long current_index = static_cast<long long>(j) + static_cast<long long>(i) * map.height_;
-
-        std::vector<std::pair<int, int>> neighbours;
-        map.find_neighbours(i, j, neighbours);
-
-        for (auto neighbour : neighbours)
+        current_index = j + i * map.height_;
+        map.find_neighbours(i, j, neighbour_motions);
+        for (auto neighbour : neighbour_motions)
         {
-          long long neighbour_index =
-              j + static_cast<long long>(neighbour.second) + (static_cast<long long>(neighbour.first) + i) * height;
-          map.data_[current_index].neighbours_.push_back(neighbour_index);
+          neighbour_index = j + neighbour.second + (neighbour.first + i) * height;
+          neighbours.push_back(neighbour_index);
         }
+        map.data_.emplace_back(x, y, false, current_index, neighbours);
+        neighbour_motions.clear();
+        neighbours.clear();
       }
     }
   }
@@ -106,7 +103,6 @@ int plan(Map& map, const Cell& start, const Cell& goal)
       continue;
     }
 
-    // std::cout << current.index_ << " vs " << goal.index_ << std::endl;
     if (current.index_ == goal.index_)
     {
       std::cout << "Found!" << std::endl;

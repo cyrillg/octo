@@ -6,7 +6,8 @@ Cell::Cell()
 {
 }
 
-Cell::Cell(double x, double y, bool occupied, int index) : pose_{ x, y }, occupied_(occupied), index_(index)
+Cell::Cell(double x, double y, bool occupied, int index, std::vector<int> neighbours)
+  : pose_{ x, y }, occupied_(occupied), index_(index), neighbours_(neighbours)
 {
 }
 
