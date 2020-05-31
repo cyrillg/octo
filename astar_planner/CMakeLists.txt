@@ -54,7 +54,7 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 configure_file(include/${PROJECT_NAME}/${PROJECT_NAME}_config.hpp.in ${PROJECT_NAME}/${PROJECT_NAME}_config.hpp)
 
-add_library(planner src/${PROJECT_NAME}/planner.cc)
+add_library(planner src/${PROJECT_NAME}/planner.cc src/${PROJECT_NAME}/map.cc src/${PROJECT_NAME}/cell.cc)
 target_include_directories(planner
                            PUBLIC
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"

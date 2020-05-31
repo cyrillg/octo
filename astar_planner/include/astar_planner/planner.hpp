@@ -1,3 +1,5 @@
+#pragma once
+
 #if defined(_WIN32)  // windows
 #if defined(PLANNER_BUILD)
 #define PLANNER_API __declspec(dllexport)
@@ -8,60 +10,26 @@
 #define PLANNER_API
 #endif
 
+#define PROFILING 1
+
 #include <iostream>
 #include <array>
 #include <string>
 #include <vector>
 #include <queue>
 #include <unordered_map>
-#include <limits>
 #include <memory>
 #include <cmath>
-#include <sstream>
 
 #include "astar_planner/priority_queue.hpp"
+#include "astar_planner/map.hpp"
+#include "astar_planner/cell.hpp"
+#include "utils/instrumentation.hpp"
 
 namespace octo
 {
-struct Pose
-{
-  double x_;
-  double y_;
-
-  // public:
-  //  Pose() = default;
-  //  Pose(double x, double y);
-};
-
-class Cell
-{
-public:
-  long index_;
-  Pose pose_;
-  bool occupied_;
-  double g_score_ = std::numeric_limits<double>::max();
-  double f_score_ = std::numeric_limits<double>::max();
-  std::vector<std::shared_ptr<Cell>> neighbours_;
-
-  Cell();
-  Cell(double x, double y, bool occupied, int index);
-  bool operator()(const Cell* a, const Cell* b);
-};
-
-class Map
-{
-public:
-  int width_;
-  int height_;
-  double resolution_;
-  std::vector<std::shared_ptr<Cell>> data_;
-};
-
-void find_neighbours(const Map& map, int i, int j, std::vector<std::pair<int, int>>& neighbours);
-
-Map generate_map(int width, int height, double resolution, Pose origin);
-
+void generate_map(int width, int height, double resolution, Pose origin, Map& map);
 double distance(const Cell& a, const Cell& b);
+int plan(Map& map, const Cell& start, const Cell& goal);  // Pose start, Pose goal);
 
-int plan();  // Pose start, Pose goal);
-};           // namespace octo
+};  // namespace octo

@@ -3,138 +3,30 @@
 // a hack square root calculation using simple operations
 namespace octo
 {
-Cell::Cell()
-{
-}
+using ScoredIndex = std::pair<long long, double>;
 
-Cell::Cell(double x, double y, bool occupied, int index) : pose_{ x, y }, occupied_(occupied), index_(index)
+void reconstruct_path(const Cell& goal, const Cell& start, std::unordered_map<long long, Cell> came_from)
 {
-}
-
-// TODO: Check how this operator overloads is linked to the std::less operator
-bool Cell::operator()(const Cell* lhs, const Cell* rhs)
-{
-  return lhs->f_score_ < rhs->f_score_;
-}
-
-void reconstruct_path(const Cell& goal, const std::shared_ptr<Cell> start, std::unordered_map<int, Cell> came_from)
-{
+  PROFILE_FUNCTION();
   Cell current = goal;
-  std::cout << "Waypoint: " << goal.pose_.x_ << " " << goal.pose_.y_ << std::endl;
-  while (current.index_ != start->index_)
+  // std::cout << "Waypoint: " << goal.pose_.x << " " << goal.pose_.y << std::endl;
+  while (current.index_ != start.index_)
   {
     current = came_from.at(current.index_);
-    std::cout << "Waypoint: " << current.pose_.x_ << " " << current.pose_.y_ << std::endl;
+    // std::cout << "Waypoint: " << current.pose_.x << " " << current.pose_.y << std::endl;
   }
+  std::cout << "Cost: " << goal.f_score_ << std::endl;
 }
 
-void find_neighbours(const Map& map, int i, int j, std::vector<std::pair<int, int>>& neighbours)
+void generate_map(int width, int height, double resolution, Pose origin, Map& map)
 {
-  std::pair<int, int> top_left = std::make_pair(1, -1);
-  std::pair<int, int> top = std::make_pair(1, 0);
-  std::pair<int, int> top_right = std::make_pair(1, 1);
-  std::pair<int, int> right = std::make_pair(0, 1);
-  std::pair<int, int> bottom_right = std::make_pair(-1, 1);
-  std::pair<int, int> bottom = std::make_pair(-1, 0);
-  std::pair<int, int> bottom_left = std::make_pair(-1, -1);
-  std::pair<int, int> left = std::make_pair(0, -1);
-
-  // Corners
-  if (i == 0 && j == 0)
-  {
-    neighbours.emplace_back(top);
-    neighbours.emplace_back(top_right);
-    neighbours.emplace_back(right);
-  }
-  else if (i == map.height_ - 1 && j == 0)
-  {
-    neighbours.emplace_back(right);
-    neighbours.emplace_back(bottom_right);
-    neighbours.emplace_back(bottom);
-  }
-  else if (i == map.height_ - 1 && j == map.width_ - 1)
-  {
-    neighbours.emplace_back(bottom);
-    neighbours.emplace_back(bottom_left);
-    neighbours.emplace_back(left);
-  }
-  else if (i == 0 && j == map.width_ - 1)
-  {
-    neighbours.emplace_back(left);
-    neighbours.emplace_back(top_left);
-    neighbours.emplace_back(top);
-  }
-  else
-  {
-    // Sides
-    if (i == 0)
-    {
-      neighbours.emplace_back(left);
-      neighbours.emplace_back(top_left);
-      neighbours.emplace_back(top);
-      neighbours.emplace_back(top_right);
-      neighbours.emplace_back(right);
-    }
-    else if (j == 0)
-    {
-      neighbours.emplace_back(top);
-      neighbours.emplace_back(top_right);
-      neighbours.emplace_back(right);
-      neighbours.emplace_back(bottom_right);
-      neighbours.emplace_back(bottom);
-    }
-    else if (j == map.width_ - 1)
-    {
-      neighbours.emplace_back(bottom);
-      neighbours.emplace_back(bottom_left);
-      neighbours.emplace_back(left);
-      neighbours.emplace_back(top_left);
-      neighbours.emplace_back(top);
-    }
-    else if (i == map.height_ - 1)
-    {
-      neighbours.emplace_back(right);
-      neighbours.emplace_back(bottom_right);
-      neighbours.emplace_back(bottom);
-      neighbours.emplace_back(bottom_left);
-      neighbours.emplace_back(left);
-    }
-    // Inside
-    else
-    {
-      neighbours.emplace_back(top_left);
-      neighbours.emplace_back(top);
-      neighbours.emplace_back(top_right);
-      neighbours.emplace_back(right);
-      neighbours.emplace_back(bottom_right);
-      neighbours.emplace_back(bottom);
-      neighbours.emplace_back(bottom_left);
-      neighbours.emplace_back(left);
-    }
-  }
-}
-
-void print_map(const Map& map)
-{
-  for (int i = map.height_ - 1; i > -1; i--)
-  {
-    std::stringstream ss1;
-    std::stringstream ss2;
-    for (int j = 0; j < map.width_; j++)
-    {
-      ss1 << " " << map.data_.at(static_cast<long long>(j) + static_cast<long long>(i) * map.height_)->g_score_;
-      ss2 << " " << map.data_.at(static_cast<long long>(j) + static_cast<long long>(i) * map.height_)->index_;
-    }
-    std::cout << ss1.str() << " | " << ss2.str() << std::endl;
-  }
-};
-
-Map generate_map(int width, int height, double resolution, Pose origin)
-{
-  Map map;
+  PROFILE_FUNCTION();
   map.width_ = width;
   map.height_ = height;
-  map.data_.reserve(static_cast<long long>(width) * height);
+  {
+    PROFILE_SCOPE("map_reserve");
+    map.data_.reserve(static_cast<long long>(width) * height);
+  }
 
   if (width < 2 || height < 2)
   {
@@ -142,135 +34,100 @@ Map generate_map(int width, int height, double resolution, Pose origin)
     exit(1);
   }
 
-  double x;
-  double y;
-  for (int i = 0; i < height; i++)
   {
-    y = origin.y_;
-    for (int j = 0; j < width; j++)
+    PROFILE_SCOPE("cell_create");
+    double x;
+    double y;
+    for (int i = 0; i < height; i++)
     {
-      x = origin.x_ + j * resolution;
-      y = origin.y_ + i * resolution;
-      std::shared_ptr<Cell> cell = std::make_shared<Cell>(x, y, false, j + i * height);
-      map.data_.emplace_back(cell);
-    }
-  }
-  for (int i = 0; i < height; i++)
-  {
-    for (int j = 0; j < width; j++)
-    {
-      std::shared_ptr<Cell> current_cell =
-          map.data_.at(static_cast<long long>(j) + static_cast<long long>(i) * map.height_);
-
-      std::vector<std::pair<int, int>> neighbours;
-      find_neighbours(map, i, j, neighbours);
-
-      for (auto neighbour : neighbours)
+      y = origin.y;
+      for (int j = 0; j < width; j++)
       {
-        long long neighbour_index =
-            j + static_cast<long long>(neighbour.second) + (static_cast<long long>(neighbour.first) + i) * height;
-        current_cell->neighbours_.push_back(map.data_.at(neighbour_index));
+        x = origin.x + j * resolution;
+        y = origin.y + i * resolution;
+        Cell cell = Cell(x, y, false, j + i * height);  // TODO measure time and allocations using that
+                                                        // temporary variable vs directly feeding emplace_back
+        map.data_.emplace_back(cell);
       }
     }
   }
+  {
+    PROFILE_SCOPE("find neighbours");
+    for (int i = 0; i < height; i++)
+    {
+      for (int j = 0; j < width; j++)
+      {
+        long long current_index = static_cast<long long>(j) + static_cast<long long>(i) * map.height_;
 
-  return map;
+        std::vector<std::pair<int, int>> neighbours;
+        map.find_neighbours(i, j, neighbours);
+
+        for (auto neighbour : neighbours)
+        {
+          long long neighbour_index =
+              j + static_cast<long long>(neighbour.second) + (static_cast<long long>(neighbour.first) + i) * height;
+          map.data_[current_index].neighbours_.push_back(neighbour_index);
+        }
+      }
+    }
+  }
 }
 
 double distance(const Cell& a, const Cell& b)
 {
-  return std::sqrt(std::pow(a.pose_.x_ - b.pose_.x_, 2) + std::pow(a.pose_.y_ - b.pose_.y_, 2));
-}
-
-double distance(const std::shared_ptr<Cell> a, const Cell& b)
-{
-  return std::sqrt(std::pow(a->pose_.x_ - b.pose_.x_, 2) + std::pow(a->pose_.y_ - b.pose_.y_, 2));
+  // std::cout << a.pose_.x << ", " << b.pose_.x << ", " << a.pose_.y << ", " << b.pose_.y << std::endl;
+  return std::sqrt(std::pow(a.pose_.x - b.pose_.x, 2) + std::pow(a.pose_.y - b.pose_.y, 2));
 }
 
 // int plan(Pose start_pose, Pose goal_pose);
-int plan()
+int plan(Map& map, const Cell& start, const Cell& goal)
 {
-  int index_start = 0;
+  PROFILE_FUNCTION();
 
-  //// The set of discovered nodes that may need to be (re-)expanded.
-  //// Initially, only the start node is known.
-  //// This is usually implemented as a min-heap or priority queue rather than a hash-set.
-  // openSet:= {start}
-  Map map = generate_map(3, 3, 1, { 0, 0 });
+  auto compare = [](ScoredIndex a, ScoredIndex b)
+  {
+    return a.second > b.second;
+  };
+  map.data_[start.index_].g_score_ = 0.;
+  map.data_[start.index_].f_score_ = distance(start, goal);
 
-  std::shared_ptr<Cell> start = map.data_.at(index_start);
+  std::priority_queue<ScoredIndex, std::vector<ScoredIndex>, decltype(compare)> open_set(compare);
+  open_set.push(std::make_pair(start.index_, map.data_[start.index_].f_score_));
 
-  PriorityQueue<std::shared_ptr<Cell>, std::vector<std::shared_ptr<Cell>>, std::less<std::shared_ptr<Cell>>> open_set;
-  open_set.push(start);
+  std::unordered_map<long long, Cell> came_from;
 
-  Cell goal = *map.data_.back();
-
-  //  // For node n, cameFrom[n] is the node immediately preceding it on the cheapest path from start
-  //  // to n currently known.
-  //  cameFrom := an empty map
-  std::unordered_map<int, Cell> came_from;
-
-  //  // For node n, gScore[n] is the cost of the cheapest path from start to n currently known.
-  //  gScore := map with default value of Infinity
-  //  gScore[start] := 0
-  start->g_score_ = 0.;
-
-  //  // For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
-  //  // how short a path from start to finish can be if it goes through n.
-  //  fScore := map with default value of Infinity
-  //  fScore[start] := h(start)
-  start->f_score_ = distance(start, goal);
-
-  //  while openSet is not empty
-  std::cout << "Set size: " << open_set.size() << std::endl;
   while (open_set.size())
   {
-    // This operation can occur in O(1) time if openSet is a min-heap or a priority queue
-    // current := the node in openSet having the lowest fScore[] value
-    //      if current = goal
-    //          return reconstruct_path(cameFrom, current)
-    Cell current = *open_set.top();
-    std::cout << "Running (" << current.index_ << ", " << goal.index_ << ")" << std::endl;
+    ScoredIndex current_scored_index = open_set.top();
+    Cell current = map.data_.at(current_scored_index.first);
+    if (current.f_score_ != current_scored_index.second)
+    {
+      open_set.pop();
+      continue;
+    }
+
+    // std::cout << current.index_ << " vs " << goal.index_ << std::endl;
     if (current.index_ == goal.index_)
     {
       std::cout << "Found!" << std::endl;
-      print_map(map);
-      reconstruct_path(goal, start, came_from);
+      reconstruct_path(map.data_.at(goal.index_), map.data_.at(start.index_), came_from);
       return 0;
     }
-    //      openSet.Remove(current)
-    open_set.pop();
-    //      for each neighbor of current
-    for (const auto neighbour : current.neighbours_)
-    {
-      //          // d(current,neighbor) is the weight of the edge from current to neighbor
-      //          // tentative_gScore is the distance from start to the neighbor through current
-      //          tentative_gScore := gScore[current] + d(current, neighbor)
-      double d = distance(current, *neighbour);
-      double new_score = current.g_score_ + d;
-      //          if tentative_gScore < gScore[neighbor]
-      //              // This path to neighbor is better than any previous one. Record it!
-      //              cameFrom[neighbor] := current
-      //              gScore[neighbor] := tentative_gScore
-      //              fScore[neighbor] := gScore[neighbor] + h(neighbor)
-      //              if neighbor not in openSet
-      //                  openSet.add(neighbor)
-      if (new_score < neighbour->g_score_)
-      {
-        came_from[neighbour->index_] = current;
-        neighbour->g_score_ = new_score;
-        neighbour->f_score_ = new_score + distance(*neighbour, goal);
-        auto it = open_set.find(neighbour);
-        if (it == open_set.end())
-        {
-          std::cout << "Pushing into queue" << std::endl;
 
-          open_set.push(neighbour);
-        }
-        else
-        {
-          std::cout << "Already there" << std::endl;
-        }
+    open_set.pop();
+
+    for (const long long neighbour_index : current.neighbours_)
+    {
+      Cell neighbour = map.data_.at(neighbour_index);
+      double d = distance(current, neighbour);
+      double new_score = current.g_score_ + d;
+      if (new_score < neighbour.g_score_)
+      {
+        came_from[neighbour.index_] = current;
+        map.data_[neighbour_index].g_score_ = new_score;
+        double h = distance(neighbour, goal);
+        map.data_[neighbour_index].f_score_ = new_score + h;
+        open_set.push(std::make_pair(neighbour.index_, map.data_[neighbour_index].f_score_));
       }
     }
   }

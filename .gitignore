@@ -1,5 +1,6 @@
 build/
 out/
+results.json
 
 .vs
 .vscode

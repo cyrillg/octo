@@ -1,3 +1,5 @@
+#define PROFILING 1
+
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -8,19 +10,15 @@
 
 int main(int argc, char* argv[])
 {
-  // report version
-  std::cout << argv[0] << " Version " << astar_viewer_VERSION_MAJOR << "."
-    << astar_viewer_VERSION_MINOR << std::endl;
-  //std::cout << "Usage: " << argv[0] << " number" << std::endl;
-  //return 1;
-
-// convert input to double
-//const double inputValue = std::stod(argv[1]);
-
-// calculate square root
-  octo::plan();
-  /*std::cout << "The square root of " << inputValue << " is " << outputValue
-    << std::endl;*/
+  PROFILING_START("astart");
+  PROFILE_SCOPE("main");
+  std::cout << argv[0] << " Version " << astar_viewer_VERSION_MAJOR << "." << astar_viewer_VERSION_MINOR << std::endl;
+  octo::Map map;
+  octo::generate_map(600, 600, 1, { 0, 0 }, map);
+  octo::Cell start = map.data_.at(0);
+  octo::Cell goal = map.data_.at(map.data_.size() - 1);
+  octo::plan(map, start, goal);
+  PROFILING_END();
 
   return 0;
 }
