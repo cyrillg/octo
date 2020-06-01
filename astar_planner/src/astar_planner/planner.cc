@@ -1,5 +1,7 @@
 #include "astar_planner/planner.hpp"
 
+#include "utils/instrumentation.hpp"
+
 // a hack square root calculation using simple operations
 namespace octo
 {
@@ -7,15 +9,14 @@ using ScoredIndex = std::pair<long long, double>;
 
 void reconstruct_path(const Cell& goal, const Cell& start, std::unordered_map<long long, Cell> came_from)
 {
-  PROFILE_FUNCTION();
   Cell current = goal;
-  // std::cout << "Waypoint: " << goal.pose_.x << " " << goal.pose_.y << std::endl;
-  while (current.index_ != start.index_)
+  // std::cout << "Waypoint: " << goal.pose.x << " " << goal.pose.y << std::endl;
+  while (current.index != start.index)
   {
-    current = came_from.at(current.index_);
-    // std::cout << "Waypoint: " << current.pose_.x << " " << current.pose_.y << std::endl;
+    current = came_from.at(current.index);
+    // std::cout << "Waypoint: " << current.pose.x << " " << current.pose.y << std::endl;
   }
-  std::cout << "Cost: " << goal.f_score_ << std::endl;
+  std::cout << "Cost: " << goal.f_score << std::endl;
 }
 
 void generate_map(int width, int height, double resolution, Pose origin, Map& map)
@@ -34,37 +35,54 @@ void generate_map(int width, int height, double resolution, Pose origin, Map& ma
     exit(1);
   }
 
-  if (width > 30000 || height > 30000)
+  if (width > MAX_DIM_SIZE || height > MAX_DIM_SIZE)
   {
-    std::cout << "Map width and length can be at most 30000 pixels" << std::endl;
+    std::cout << "Map width and length can be at most " << MAX_DIM_SIZE << " pixels" << std::endl;
     exit(1);
   }
 
   {
     PROFILE_SCOPE("cell_create");
-    double x;
-    double y;
+    double x = 0.;
+    double y = 0.;
     std::vector<std::pair<int, int>> neighbour_motions;
     std::vector<int> neighbours;
-    int current_index;
-    int neighbour_index;
+    int current_index = 0;
+    int neighbour_index = 0;
     for (int i = 0; i < height; i++)
     {
-      y = origin.y;
+      y = origin.y + i * resolution;
       for (int j = 0; j < width; j++)
       {
-        x = origin.x + j * resolution;
-        y = origin.y + i * resolution;
-        current_index = j + i * map.height_;
-        map.find_neighbours(i, j, neighbour_motions);
-        for (auto neighbour : neighbour_motions)
         {
-          neighbour_index = j + neighbour.second + (neighbour.first + i) * height;
-          neighbours.push_back(neighbour_index);
+          PROFILE_SCOPE("calc coordinates");
+          x = origin.x + j * resolution;
+          current_index = j + i * map.height_;
         }
-        map.data_.emplace_back(x, y, false, current_index, neighbours);
-        neighbour_motions.clear();
-        neighbours.clear();
+
+        {
+          PROFILE_SCOPE("find neighbours");
+          neighbour_motions = map.find_neighbours(i, j);
+        }
+
+        {
+          PROFILE_SCOPE("transform neighbours");
+          neighbours.reserve(neighbour_motions.size());
+          for (auto neighbour : neighbour_motions)
+          {
+            neighbours.emplace_back(j + neighbour.second + (neighbour.first + i) * height);
+          }
+        }
+        {
+          PROFILE_SCOPE("push neighbours");
+          map.data_.push_back({ current_index, x, y, false, neighbours });
+        }
+
+        {
+          PROFILE_SCOPE("clear tmps");
+          neighbour_motions.clear();
+          neighbours.clear();
+        }
       }
     }
   }
@@ -72,58 +90,54 @@ void generate_map(int width, int height, double resolution, Pose origin, Map& ma
 
 double distance(const Cell& a, const Cell& b)
 {
-  // std::cout << a.pose_.x << ", " << b.pose_.x << ", " << a.pose_.y << ", " << b.pose_.y << std::endl;
-  return std::sqrt(std::pow(a.pose_.x - b.pose_.x, 2) + std::pow(a.pose_.y - b.pose_.y, 2));
+  // std::cout << a.pose.x << ", " << b.pose.x << ", " << a.pose.y << ", " << b.pose.y << std::endl;
+  return std::sqrt(std::pow(a.pose.x - b.pose.x, 2) + std::pow(a.pose.y - b.pose.y, 2));
 }
 
 // int plan(Pose start_pose, Pose goal_pose);
 int plan(Map& map, const Cell& start, const Cell& goal)
 {
   PROFILE_FUNCTION();
-
-  auto compare = [](ScoredIndex a, ScoredIndex b)
-  {
-    return a.second > b.second;
-  };
-  map.data_[start.index_].g_score_ = 0.;
-  map.data_[start.index_].f_score_ = distance(start, goal);
+  auto compare = [](ScoredIndex a, ScoredIndex b) { return a.second > b.second; };
+  map.data_[start.index].g_score = 0.;
+  map.data_[start.index].f_score = distance(start, goal);
 
   std::priority_queue<ScoredIndex, std::vector<ScoredIndex>, decltype(compare)> open_set(compare);
-  open_set.push(std::make_pair(start.index_, map.data_[start.index_].f_score_));
+  open_set.push(std::make_pair(start.index, map.data_[start.index].f_score));
 
   std::unordered_map<long long, Cell> came_from;
 
-  while (open_set.size())
+  while (!open_set.empty())
   {
     ScoredIndex current_scored_index = open_set.top();
     Cell current = map.data_.at(current_scored_index.first);
-    if (current.f_score_ != current_scored_index.second)
+    if (current.f_score != current_scored_index.second)
     {
       open_set.pop();
       continue;
     }
 
-    if (current.index_ == goal.index_)
+    if (current.index == goal.index)
     {
       std::cout << "Found!" << std::endl;
-      reconstruct_path(map.data_.at(goal.index_), map.data_.at(start.index_), came_from);
+      reconstruct_path(map.data_.at(goal.index), map.data_.at(start.index), came_from);
       return 0;
     }
 
     open_set.pop();
 
-    for (const long long neighbour_index : current.neighbours_)
+    for (const long long neighbour_index : current.neighbours)
     {
       Cell neighbour = map.data_.at(neighbour_index);
       double d = distance(current, neighbour);
-      double new_score = current.g_score_ + d;
-      if (new_score < neighbour.g_score_)
+      double new_score = current.g_score + d;
+      if (new_score < neighbour.g_score)
       {
-        came_from[neighbour.index_] = current;
-        map.data_[neighbour_index].g_score_ = new_score;
+        came_from[neighbour.index] = current;
+        map.data_[neighbour_index].g_score = new_score;
         double h = distance(neighbour, goal);
-        map.data_[neighbour_index].f_score_ = new_score + h;
-        open_set.push(std::make_pair(neighbour.index_, map.data_[neighbour_index].f_score_));
+        map.data_[neighbour_index].f_score = new_score + h;
+        open_set.push(std::make_pair(neighbour.index, map.data_[neighbour_index].f_score));
       }
     }
   }

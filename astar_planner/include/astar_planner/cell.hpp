@@ -1,28 +1,24 @@
 #pragma once
 
-#define PROFILING 1
+// #define PROFILING 1
 
 #include <limits>
 #include <vector>
 
-#include "utils/instrumentation.hpp"
 #include "astar_planner/pose.hpp"
+#include "utils/instrumentation.hpp"
 
 namespace octo
 {
-class Cell
+struct Cell
 {
-public:
-  long index_;
-  Pose pose_;
-  bool occupied_;
-  double g_score_ = std::numeric_limits<double>::max();
-  double f_score_ = std::numeric_limits<double>::max();
-  std::vector<int> neighbours_;
+  long index{ 0 };
+  Pose pose{ 0, 0 };
+  bool occupied{ false };
+  std::vector<int> neighbours;
+  double g_score{ std::numeric_limits<double>::max() };
+  double f_score{ std::numeric_limits<double>::max() };
 
-  Cell();
-  Cell(double x, double y, bool occupied, int index, std::vector<int> neighbours_);
-  bool operator()(const Cell* a, const Cell* b);
+  bool operator()(const Cell* lhs, const Cell* rhs);
 };
-
 }  // namespace octo

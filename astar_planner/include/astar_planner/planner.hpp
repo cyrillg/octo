@@ -10,21 +10,23 @@
 #define PLANNER_API
 #endif
 
-#define PROFILING 1
+// #define PROFILING 1
 
-#include <iostream>
 #include <array>
-#include <string>
-#include <vector>
-#include <queue>
-#include <unordered_map>
-#include <memory>
 #include <cmath>
+#include <iostream>
+#include <memory>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "astar_planner/priority_queue.hpp"
-#include "astar_planner/map.hpp"
 #include "astar_planner/cell.hpp"
+#include "astar_planner/map.hpp"
+#include "astar_planner/priority_queue.hpp"
 #include "utils/instrumentation.hpp"
+
+#define MAX_DIM_SIZE 30000
 
 namespace octo
 {

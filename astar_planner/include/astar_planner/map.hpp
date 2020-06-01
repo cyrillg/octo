@@ -1,14 +1,14 @@
 #pragma once
 
-#define PROFILING 1
+// #define PROFILING 1
 
-#include <vector>
-#include <unordered_map>
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
+#include <vector>
 
-#include "utils/instrumentation.hpp"
 #include "astar_planner/cell.hpp"
+#include "utils/instrumentation.hpp"
 
 using neighbour_motion = std::pair<int, int>;
 
@@ -30,7 +30,7 @@ public:
   int height_;
   double resolution_;
   std::vector<Cell> data_;
-  void find_neighbours(int i, int j, std::vector<std::pair<int, int>>& neighbours);
+  std::vector<std::pair<int, int>> find_neighbours(int i, int j) const;
   void print_map();
 };
-}
+}  // namespace octo
